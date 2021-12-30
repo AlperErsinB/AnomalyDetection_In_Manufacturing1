@@ -1,0 +1,106 @@
+# load the data from the matlab file
+m = sio.loadmat(folder_raw_data / ‘mill.mat’,struct_as_record=True)
+
+# store the ‘mill’ data in a separate np array
+data = m[‘mill’]
+
+
+# store the field names in the data np array in a tuple, l
+l = data.dtype.names
+print('List of the field names:\n', l)>>> List of the field names:
+>>> ('case', 'run', 'VB', 'time', 'DOC', 'feed', 'material', 'smcAC', 'smcDC', 'vib_table', 'vib_spindle', 'AE_table', 'AE_spindle')
+
+
+
+# store the field names in the data np array in a tuple, l
+l = data.dtype.names
+# create empty dataframe for the labels
+df_labels = pd.DataFrame()
+# get the labels from the original .mat file and put in dataframe
+for i in range(7):
+# list for storing the label data for each field
+x = []
+# iterate through each of the unique cuts
+for j in range(167):
+x.append(data[0,j][i][0][0])
+x = np.array(x)
+df_labels[str(i)] = x
+# add column names to the dataframe
+df_labels.columns = l[0:7]
+# create a column with the unique cut number
+df_labels[‘cut_no’] = [i for i in range(167)]
+df_labels.head()
+
+
+
+# look at cut number 167 (index 166)
+cut_no = 166
+fig, ax = plt.subplots()
+ax.plot(data[0,cut_no][‘smcAC’], label=’smcAC’)
+ax.plot(data[0,cut_no][‘smcDC’], label=’smcDC’)
+ax.plot(data[0,cut_no][‘vib_table’], label=’vib_table’)
+ax.plot(data[0,cut_no][‘vib_spindle’], label=’vib_spindle’)
+ax.plot(data[0,cut_no][‘AE_table’], label=’AE_table’)
+ax.plot(data[0,cut_no][‘AE_spindle’], label=’AE_spindle’)
+plt.legend()
+
+
+
+def plot_cut(cut_signal, signals_trend, cut_no):
+# define colour palette and seaborn style
+pal = sns.cubehelix_palette(6, rot=-0.25, light=0.7)
+sns.set(style=”white”, context=”notebook”)
+fig, axes = plt.subplots(
+6, 1, dpi=150, figsize=(5, 6), sharex=True, constrained_layout=True,
+)
+# the “revised” signal names so it looks good on the chart
+signal_names_revised = [
+“AE Spindle”,
+“AE Table”,
+“Vibe Spindle”,
+“Vibe Table”,
+“DC Current”,
+“AC Current”,
+]
+# go through each of the signals
+for i in range(6):
+# plot the signal
+# note, we take the length of the signal (9000 data point)
+# and divide it by the frequency (250 Hz) to get the x-axis
+# into seconds
+axes[i].plot(np.arange(0,9000)/250.0,
+cut_signal[signals_trend[i]],
+color=pal[i],
+linewidth=0.5,
+alpha=1)
+axis_label = signal_names_revised[i]
+axes[i].set_ylabel(
+axis_label, fontsize=7,
+)
+# if it’s not the last signal on the plot
+# we don’t want to show the subplot outlines
+if i != 5:
+axes[i].spines[“top”].set_visible(False)
+axes[i].spines[“right”].set_visible(False)
+axes[i].spines[“left”].set_visible(False)
+axes[i].spines[“bottom”].set_visible(False)
+axes[i].set_yticks([]) # also remove the y-ticks, cause ugly
+# for the last signal we will show the x-axis labels
+# which are the length (in seconds) of the signal
+else:
+axes[i].spines[“top”].set_visible(False)
+axes[i].spines[“right”].set_visible(False)
+axes[i].spines[“left”].set_visible(False)
+axes[i].spines[“bottom”].set_visible(False)
+axes[i].set_yticks([])
+axes[i].tick_params(axis=”x”, labelsize=7)
+axes[i].set_xlabel(‘Seconds’, size=5)
+signals_trend = list(l[7:]) # there are 6 types of signals, smcAC to AE_spindle
+signals_trend = signals_trend[::-1] # reverse the signal order so that it is matching other charts
+# we’ll plot signal 146 (index 145)
+cut_signal = data[0, 145]
+plot_cut(cut_signal, signals_trend, “cut_146”)
+# plt.savefig(‘cut_signals.png’,format=’png’) # save the figure
+plt.show()
+
+
